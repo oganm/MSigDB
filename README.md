@@ -2,7 +2,7 @@
 MSigDB
 ======
 
-Houses gene lists from [Broad Institute Molecular Signatures](http://software.broadinstitute.org/gsea/msigdb/index.jsp) Database.
+Houses gene lists from [Broad Institute Molecular Signatures](http://software.broadinstitute.org/gsea/msigdb/index.jsp) Database. They do want to keep track of their user counts so you might want to log in there as well.
 
 Usage
 =====
