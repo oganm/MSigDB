@@ -1,3 +1,52 @@
+#    java -jar /home/omancarci/Downloads/selenium-server-standalone-3.3.1.jar -port 4445 
+
+
+
+library(RSelenium)
+library(stringr)
+library(magrittr)
+
+
+cprof<-makeFirefoxProfile(list(
+    browser.download.dir = '/home/omancarci/git repos/MSigDB/data-raw/',
+    browser.helperApps.neverAsk.saveToDisk='text/plain, text/xml,application/xml, application/vnd.ms-excel, text/csv, text/comma-separated-values, application/octet-stream',
+    browser.download.manager.showWhenStarting = FALSE
+))
+
+remDr <- remoteDriver(remoteServerAddr = "localhost"
+                      , port = 4445L
+                      , browserName = "firefox",
+                      extraCapabilities=cprof
+                      
+)
+
+remDr$open()
+
+remDr$navigate("http://software.broadinstitute.org/gsea/downloads.jsp")
+
+
+webElem = remDr$findElement(using = 'id', value = "email")
+
+webElem$sendKeysToElement(sendKeys = list('ogan.mancarcii@gmail.com'))
+webElem = remDr$findElement(using = 'name', value = "login")
+webElem$clickElement()
+
+webElem = remDr$findElement(using = 'partial link text', value = ".xml")
+text = webElem$getElementText()
+version = text %>% str_extract('(?<=v).*?(?=.xml)')
+
+link = webElem$getElementAttribute(attrName = 'href')[[1]]
+webElem$clickElement()
+
+remDr$navigate(link)
+
+webElem$acceptAlert()
+
+link = remDr$getPageSource()[[1]] %>% str_extract('Current MSigDB xml file.*\n.*\n') %>% str_extract('msigdb/download_file.*?.xml(?=")')
+
+download.file(paste0('software.broadinstitute.org/gsea/',link),destfile = 'data-raw/msigdb.xml')
+
+# above this part isn't complete yet ---------------------------------------------------
 require(XML)
 data <- xmlParse("/home/omancarci/Downloads/msigdb_v5.2.xml")
 
