@@ -117,3 +117,8 @@ killPid %>% sapply(function(x){
     }
 )
     
+killPid = system(' ps ax  | grep firefox',intern = TRUE) %>% str_extract('^[0-9]*(?=\\s)')
+killPid %>% sapply(function(x){
+    system(paste('kill',x))
+}
+)
