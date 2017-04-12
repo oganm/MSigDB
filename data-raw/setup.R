@@ -102,6 +102,11 @@ if(MSigVersion!=readLines('data-raw/version')){
     git2r::add(repo,path ='DESCRIPTION')
     git2r::add(repo,path = 'data/MSigDB.rda')
     git2r::add(repo,path = 'data-raw/*')
+    git2r::commit(repo,message = paste('Automatic update to version',MSigVersion))
+    
+    pass = readLines('data-raw/auth')
+    cred = git2r::cred_user_pass('OganM',pass)
+    git2r::push(repo,credentials = cred)
 }
 
 
