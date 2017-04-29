@@ -9,9 +9,9 @@ library(RCurl)
 library(ogbox)
 library(git2r)
 
-system('java -jar /home/omancarci/Downloads/selenium-server-standalone-3.3.1.jar -port 4445 &')
+system('java -jar /home/omancarci/Downloads/selenium-server-standalone-3.4.0.jar -port 4445 &')
 
-
+Sys.sleep(3)
 
 cprof<-makeFirefoxProfile(list(
     #browser.download.dir = '/home/omancarci/git repos/MSigDB/data-raw/', # this line doesn't work. not sure why
@@ -28,14 +28,20 @@ remDr <- remoteDriver(remoteServerAddr = "localhost"
 
 remDr$open()
 
+Sys.sleep(3)
+
 remDr$navigate("http://software.broadinstitute.org/gsea/downloads.jsp")
+Sys.sleep(3)
 
 
 webElem = remDr$findElement(using = 'id', value = "email")
 
 webElem$sendKeysToElement(sendKeys = list('ogan.mancarcii@gmail.com'))
+Sys.sleep(3)
+
 webElem = remDr$findElement(using = 'name', value = "login")
 webElem$clickElement()
+Sys.sleep(3)
 
 webElem = remDr$findElement(using = 'partial link text', value = "symbols.gmt")
 
@@ -53,6 +59,7 @@ groupsToDownload= c('h.all.',
                     'c7.all.')
 
 if(MSigVersion!=readLines('data-raw/version')){
+    print('Update required')
     for(x in groupsToDownload){
         webElem = remDr$findElement(using = 'partial link text', value = paste0(x,'v',MSigVersion,".symbols.gmt"))
         webElem$clickElement()
@@ -107,18 +114,21 @@ if(MSigVersion!=readLines('data-raw/version')){
     pass = readLines('data-raw/auth')
     cred = git2r::cred_user_pass('OganM',pass)
     git2r::push(repo,credentials = cred)
+} else{
+    print('Update not required')
 }
 
 
 # auto kill server at the end
-killPid = system(' ps ax  | grep selenium',intern = TRUE) %>% str_extract('^[0-9]*(?=\\s)')
+killPid = system(' ps ax  | grep selenium',intern = TRUE) %>% str_extract('^\\s[0-9]*(?=\\s)')
 killPid %>% sapply(function(x){
         system(paste('kill',x))
     }
 )
     
-killPid = system(' ps ax  | grep firefox',intern = TRUE) %>% str_extract('^[0-9]*(?=\\s)')
+killPid = system(' ps ax  | grep firefox',intern = TRUE) %>% str_extract('^\\s[0-9]*(?=\\s)')
 killPid %>% sapply(function(x){
     system(paste('kill',x))
 }
 )
+
