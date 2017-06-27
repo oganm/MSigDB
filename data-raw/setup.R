@@ -120,13 +120,13 @@ if(MSigVersion!=readLines('data-raw/version')){
 
 
 # auto kill server at the end
-killPid = system(' ps ax  | grep selenium',intern = TRUE) %>% str_extract('^\\s[0-9]*(?=\\s)')
+killPid = system(' ps ax  | grep selenium',intern = TRUE) %>% str_extract('^(\\s)*[0-9]*(?=\\s)')
 killPid %>% sapply(function(x){
         system(paste('kill',x))
     }
 )
     
-killPid = system(' ps ax  | grep firefox',intern = TRUE) %>% str_extract('^\\s[0-9]*(?=\\s)')
+killPid = system(' ps ax  | grep firefox',intern = TRUE) %>% str_extract('^\\s*[0-9]*(?=\\s)')
 killPid %>% sapply(function(x){
     system(paste('kill',x))
 }
