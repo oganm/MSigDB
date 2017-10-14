@@ -9,7 +9,7 @@ library(RCurl)
 library(ogbox)
 library(git2r)
 
-system('java -jar /home/omancarci/Downloads/selenium-server-standalone-3.4.0.jar -port 4445 &')
+system('java -jar /home/omancarci/Downloads/selenium-server-standalone-3.6.0.jar -port 4445 &')
 
 Sys.sleep(3)
 
