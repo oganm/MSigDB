@@ -9,14 +9,15 @@ library(RCurl)
 library(ogbox)
 library(git2r)
 
-system('java -jar /home/omancarci/Downloads/selenium-server-standalone-3.6.0.jar -port 4445 &')
+system('java -jar /home/omancarci/Downloads/selenium-server-standalone-3.4.0.jar -port 4445 &') # clicking doesn't work in latest 3.6 version
 
 Sys.sleep(3)
 
 cprof<-makeFirefoxProfile(list(
     #browser.download.dir = '/home/omancarci/git repos/MSigDB/data-raw/', # this line doesn't work. not sure why
-    browser.helperApps.neverAsk.saveToDisk='text/plain, text/xml,application/xml, application/vnd.ms-excel, text/csv, text/comma-separated-values, application/octet-stream',
-    browser.download.manager.showWhenStarting = FALSE
+    browser.helperApps.neverAsk.saveToDisk='text/plain, text/xml,application/xml, application/vnd.ms-excel, text/csv, text/comma-separated-values, application/octet-stream','application/gedit',
+    browser.download.manager.showWhenStarting = FALSE,
+    browser.helperApps.alwaysAsk.force = FALSE
 ))
 
 remDr <- remoteDriver(remoteServerAddr = "localhost"
