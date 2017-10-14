@@ -9,7 +9,7 @@ library(RCurl)
 library(ogbox)
 library(git2r)
 
-system('java -jar /home/omancarci/Downloads/selenium-server-standalone-3.4.0.jar -port 4445 &') # clicking doesn't work in latest 3.6 version
+system('java -jar selenium-server-standalone-3.4.0.jar -port 4445 &') # clicking doesn't work in latest 3.6 version
 
 Sys.sleep(3)
 
