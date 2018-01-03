@@ -9,7 +9,18 @@ library(RCurl)
 library(ogbox)
 library(git2r)
 
-system('java -jar selenium-server-standalone-3.4.0.jar -port 4445 &') # clicking doesn't work in latest 3.6 version
+# auto kill server that might be still up
+killPid = system(' ps ax  | grep selenium',intern = TRUE) %>% str_extract('^(\\s)*[0-9]*(?=\\s)')
+killPid %>% sapply(function(x){
+    system(paste('kill -9',x))
+})
+
+killPid = system(' ps ax  | grep firefox',intern = TRUE) %>% str_extract('^\\s*[0-9]*(?=\\s)')
+killPid %>% sapply(function(x){
+    system(paste('kill -9',x))
+})
+
+system('java -jar selenium-server-standalone-3.8.1.jar -port 4445 &') 
 
 Sys.sleep(3)
 
@@ -58,10 +69,14 @@ groupsToDownload= c('h.all.',
                     'c5.all.',
                     'c6.all.',
                     'c7.all.')
+downloaded = list.files('/home/omancarci/Downloads/',full.names = TRUE)
 
 if(MSigVersion!=readLines('data-raw/version')){
     print('Update required')
     for(x in groupsToDownload){
+        # delete the file if already present
+        file.remove(downloaded[grepl(pattern = paste0(x,'v',MSigVersion,".symbols.gmt"), x = downloaded)])
+        
         webElem = remDr$findElement(using = 'partial link text', value = paste0(x,'v',MSigVersion,".symbols.gmt"))
         webElem$clickElement()
         # wait for download to be completed
