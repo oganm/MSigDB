@@ -3,6 +3,7 @@ library(stringr)
 library(magrittr)
 library(purrr)
 library(ogbox)
+library(git2r)
 
 url = "http://software.broadinstitute.org/gsea/downloads.jsp"
 session <-html_session(url)               ## create session
@@ -100,8 +101,8 @@ if(MSigVersion!=readLines('data-raw/version')){
             x = map(x, function(y)y[-c(1,2)])
             return(x)})
     
-    devtools::use_data(MSigDB,overwrite = TRUE)
-    devtools::use_data(MSigDB_entrez,overwrite = TRUE)
+    usethis::use_data(MSigDB,overwrite = TRUE)
+    usethis::use_data(MSigDB_entrez,overwrite = TRUE)
     
     version = getVersion()
     version %<>% strsplit('\\.') %>% {.[[1]]}
@@ -113,10 +114,14 @@ if(MSigVersion!=readLines('data-raw/version')){
     repo = repository('.')
     git2r::add(repo,path ='DESCRIPTION')
     git2r::add(repo,path = 'data/MSigDB.rda')
+    git2r::add(repo,path = 'data/MSigDB_entrez.rda')
+    
     git2r::add(repo,path = 'data-raw/*')
     git2r::commit(repo,message = paste('Automatic update to version',MSigVersion))
     
-    pass = readLines('data-raw/auth')
+    token = readLines('data-raw/auth')
+    Sys.setenv(GITHUB_PAT = token)
+    
     cred = git2r::cred_user_pass('OganM',pass)
     git2r::push(repo,credentials = cred)
 } else{
