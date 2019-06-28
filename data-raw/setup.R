@@ -1,65 +1,26 @@
-#    java -jar /home/omancarci/Downloads/selenium-server-standalone-3.3.1.jar -port 4445 
-library(RSelenium)
+library(rvest)
 library(stringr)
 library(magrittr)
-require(XML)
 library(purrr)
-library(dplyr)
-library(RCurl)
 library(ogbox)
-library(git2r)
 
-# auto kill server that might be still up
-killPid = system(' ps ax  | grep selenium',intern = TRUE) %>% str_extract('^(\\s)*[0-9]*(?=\\s)')
-killPid %>% sapply(function(x){
-    system(paste('kill -9',x))
-})
-
-killPid = system(' ps ax  | grep firefox',intern = TRUE) %>% str_extract('^\\s*[0-9]*(?=\\s)')
-killPid %>% sapply(function(x){
-    system(paste('kill -9',x))
-})
-
-system('java -jar selenium-server-standalone-3.8.1.jar -port 4445 &') 
-
-Sys.sleep(3)
-
-cprof<-makeFirefoxProfile(list(
-    #browser.download.dir = '/home/omancarci/git repos/MSigDB/data-raw/', # this line doesn't work. not sure why
-    browser.helperApps.neverAsk.saveToDisk='text/plain, text/xml,application/xml, application/vnd.ms-excel, text/csv, text/comma-separated-values, application/octet-stream','application/gedit',
-    browser.download.manager.showWhenStarting = FALSE,
-    browser.helperApps.alwaysAsk.force = FALSE
-))
-
-remDr <- remoteDriver(remoteServerAddr = "localhost"
-                      , port = 4445L
-                      , browserName = "firefox",
-                      extraCapabilities=cprof
-                      
-)
-
-remDr$open()
-
-Sys.sleep(3)
-
-remDr$navigate("http://software.broadinstitute.org/gsea/downloads.jsp")
-Sys.sleep(3)
+url = "http://software.broadinstitute.org/gsea/downloads.jsp"
+session <-html_session(url)               ## create session
+form    <-html_form(session)[[1]]       ## pull form from session
 
 
-webElem = remDr$findElement(using = 'id', value = "email")
+filled_form = set_values(form, j_username = "ogan.mancarcii@gmail.com")
 
-webElem$sendKeysToElement(sendKeys = list('ogan.mancarcii@gmail.com'))
-Sys.sleep(3)
+session = submit_form(session,filled_form)
 
-webElem = remDr$findElement(using = 'name', value = "login")
-webElem$clickElement()
-Sys.sleep(3)
+dataList = html_nodes(session,'.lists1')[[2]]
 
-webElem = remDr$findElement(using = 'partial link text', value = "symbols.gmt")
 
-text = webElem$getElementText()
-MSigVersion = text %>% str_extract('(?<=v).*?(?=.symbols)')
-
+session %>%
+    html_node(xpath = '//*[@id="content_full"]/table[2]//*[contains(text(),"symbols.gmt")]') %>% 
+    html_text() %>% 
+    str_extract('(?<=v).*?(?=.symbols)') -> 
+    MSigVersion
 
 groupsToDownload= c('h.all.',
                     'c1.all.',
@@ -69,20 +30,20 @@ groupsToDownload= c('h.all.',
                     'c5.all.',
                     'c6.all.',
                     'c7.all.')
-downloaded = list.files('/home/omancarci/Downloads/',full.names = TRUE)
+
 
 if(MSigVersion!=readLines('data-raw/version')){
-    print('Update required')
     for(x in groupsToDownload){
-        # delete the file if already present
-        file.remove(downloaded[grepl(pattern = paste0(x,'v',MSigVersion,".symbols.gmt"), x = downloaded)])
+        datalinks = dataList %>% html_nodes(glue::glue('a[href*="{x}"]'))
+        datalinks %<>% sapply(html_attr,'href')
+        symbolLink = datalinks[grepl('symbols',datalinks)]
+        entrezLink = datalinks[grepl('entrez',datalinks)]
         
-        webElem = remDr$findElement(using = 'partial link text', value = paste0(x,'v',MSigVersion,".symbols.gmt"))
-        webElem$clickElement()
-        # wait for download to be completed
-        Sys.sleep(3)
-        file.copy(from=paste0('/home/omancarci/Downloads/',x,'v',MSigVersion,'.symbols.gmt'),
-                  to =paste0('data-raw/',x,'symbols.gmt'),overwrite = TRUE)
+        symbols = rvest::jump_to(session,url = glue::glue('http://software.broadinstitute.org/gsea/{symbolLink}'))
+        entrez = rvest::jump_to(session,url = glue::glue('http://software.broadinstitute.org/gsea/{entrezLink}'))
+        
+        writeLines(symbols$response %>% as.character,paste0('data-raw/',x,'symbols.gmt'))
+        writeLines(entrez$response %>% as.character,paste0('data-raw/',x,'entrez.gmt'))
     }
     
     
@@ -96,6 +57,15 @@ if(MSigVersion!=readLines('data-raw/version')){
     C6_ONCOGENIC_SIGNATURES = 'data-raw/c6.all.symbols.gmt'
     C7_IMMUNOLOGIC_SIGNATURES = 'data-raw/c7.all.symbols.gmt'
     
+    HALLMARK_entrez = 'data-raw/h.all.entrez.gmt'
+    C1_POSITIONAL_entrez = 'data-raw/c1.all.entrez.gmt'
+    C2_CURATED_entrez = 'data-raw/c2.all.entrez.gmt'
+    C3_MOTIF_entrez = 'data-raw/c3.all.entrez.gmt'
+    C4_COMPUTATIONAL_entrez = 'data-raw/c4.all.entrez.gmt'
+    C5_GENE_ONTOLOGY_entrez = 'data-raw/c5.all.entrez.gmt'
+    C6_ONCOGENIC_SIGNATURES_entrez = 'data-raw/c6.all.entrez.gmt'
+    C7_IMMUNOLOGIC_SIGNATURES_entrez = 'data-raw/c7.all.entrez.gmt'
+    
     MSigDB = list(HALLMARK = HALLMARK,
                   C1_POSITIONAL = C1_POSITIONAL,
                   C2_CURATED = C2_CURATED,
@@ -105,6 +75,15 @@ if(MSigVersion!=readLines('data-raw/version')){
                   C6_ONCOGENIC_SIGNATURES = C6_ONCOGENIC_SIGNATURES,
                   C7_IMMUNOLOGIC_SIGNATURES = C7_IMMUNOLOGIC_SIGNATURES)
     
+    MSigDB_entrez = list(HALLMARK = HALLMARK_entrez,
+                         C1_POSITIONAL = C1_POSITIONAL_entrez,
+                         C2_CURATED = C2_CURATED_entrez,
+                         C3_MOTIF = C3_MOTIF_entrez,
+                         C4_COMPUTATIONAL = C4_COMPUTATIONAL_entrez,
+                         C5_GENE_ONTOLOGY = C5_GENE_ONTOLOGY_entrez,
+                         C6_ONCOGENIC_SIGNATURES = C6_ONCOGENIC_SIGNATURES_entrez,
+                         C7_IMMUNOLOGIC_SIGNATURES = C7_IMMUNOLOGIC_SIGNATURES_entrez)
+    
     MSigDB %<>% 
         map(readLines) %>% 
         map(map,function(x){strsplit(x,'\t')[[1]]}) %>% 
@@ -113,7 +92,17 @@ if(MSigVersion!=readLines('data-raw/version')){
             x = map(x, function(y)y[-c(1,2)])
             return(x)})
     
+    MSigDB_entrez %<>%  
+        map(readLines) %>% 
+        map(map,function(x){strsplit(x,'\t')[[1]]}) %>% 
+        map(function(x){
+            names(x) = map(x,1)
+            x = map(x, function(y)y[-c(1,2)])
+            return(x)})
+    
     devtools::use_data(MSigDB,overwrite = TRUE)
+    devtools::use_data(MSigDB_entrez,overwrite = TRUE)
+    
     version = getVersion()
     version %<>% strsplit('\\.') %>% {.[[1]]}
     setVersion(paste(version[1],version[2],MSigVersion,sep='.'))
@@ -133,18 +122,4 @@ if(MSigVersion!=readLines('data-raw/version')){
 } else{
     print('Update not required')
 }
-
-
-# auto kill server at the end
-killPid = system(' ps ax  | grep selenium',intern = TRUE) %>% str_extract('^(\\s)*[0-9]*(?=\\s)')
-killPid %>% sapply(function(x){
-        system(paste('kill',x))
-    }
-)
-    
-killPid = system(' ps ax  | grep firefox',intern = TRUE) %>% str_extract('^\\s*[0-9]*(?=\\s)')
-killPid %>% sapply(function(x){
-    system(paste('kill',x))
-}
-)
 
