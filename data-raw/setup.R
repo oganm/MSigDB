@@ -89,6 +89,7 @@ if(MSigVersion!=readLines('data-raw/version')){
         map(readLines) %>% 
         map(map,function(x){strsplit(x,'\t')[[1]]}) %>% 
         map(function(x){
+            x = x[x %>% sapply(length) %>% {.!=0}]
             names(x) = map(x,1)
             x = map(x, function(y)y[-c(1,2)])
             return(x)})
@@ -97,6 +98,7 @@ if(MSigVersion!=readLines('data-raw/version')){
         map(readLines) %>% 
         map(map,function(x){strsplit(x,'\t')[[1]]}) %>% 
         map(function(x){
+            x = x[x %>% sapply(length) %>% {.!=0}]
             names(x) = map(x,1)
             x = map(x, function(y)y[-c(1,2)])
             return(x)})
