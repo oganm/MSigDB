@@ -1,18 +1,20 @@
-
 MSigDB
-======
+================
 
-Houses gene lists from [Broad Institute Molecular Signatures](http://software.broadinstitute.org/gsea/msigdb/index.jsp) Database. They do want to keep track of their user counts so you might want to log in there as well. Note that there is an [msigdbr](https://github.com/igordot/msigdbr) package that is also uploaded to CRAN that provides
-similar funcitonality.
+Houses gene lists from [Broad Institute Molecular
+Signatures](http://software.broadinstitute.org/gsea/msigdb/index.jsp)
+Database. They do want to keep track of their user counts so you might
+want to log in there as well. Note that there is an
+[msigdbr](https://github.com/igordot/msigdbr) package that is also
+uploaded to CRAN that provides similar funcitonality.
 
-Installation
-==========
-```r
+# Installation
+
+``` r
 devtools::install_github('oganm/MSigDB')
 ```
 
-Usage
-=====
+# Usage
 
 ``` r
 library(MSigDB)
@@ -25,24 +27,26 @@ names(MSigDB)
     ## [7] "C6_ONCOGENIC_SIGNATURES"   "C7_IMMUNOLOGIC_SIGNATURES"
 
 ``` r
-head(names(MSigDB$HALLMARK))
+names(MSigDB$human)
 ```
 
-    ## [1] "HALLMARK_TNFA_SIGNALING_VIA_NFKB"   
-    ## [2] "HALLMARK_HYPOXIA"                   
-    ## [3] "HALLMARK_CHOLESTEROL_HOMEOSTASIS"   
-    ## [4] "HALLMARK_MITOTIC_SPINDLE"           
-    ## [5] "HALLMARK_WNT_BETA_CATENIN_SIGNALING"
-    ## [6] "HALLMARK_TGF_BETA_SIGNALING"
+    ## NULL
 
 ``` r
-head(MSigDB$HALLMARK$HALLMARK_COMPLEMENT)
+head(names(MSigDB$human$H))
 ```
 
-    ## [1] "C2"       "C1S"      "CFB"      "C1R"      "SERPINE1" "MMP14"
-
-`getMSigInfo` function simply navigates to the broad institute website with the relevant data
+    ## NULL
 
 ``` r
-getMSigInfo('HALLMARK_COMPLEMENT')
+MSigDB$human$H$HALLMARK_PEROXISOME
+```
+
+    ## NULL
+
+`getMSigInfo` function simply navigates to the broad institute website
+with the relevant data
+
+``` r
+getMSigInfo('HALLMARK_PEROXISOME',)
 ```

@@ -1,11 +1,11 @@
 Package: MSigDB
 Title: Molecular signatures database
-Version: 1.1.6.2
+Version: 2.0.2022.1
 Authors@R: person("Ogan", "Mancarci", email = "ogan.mancarcii@gmail.com", role = c("aut", "cre"))
 Description: This package houses data from molecular signatures database. All
     gene lists are stored in the MSigDB object.
 Depends:
-    R (>= 1.6.2)
+    R (>= 2.10)
 License: MIT
 LazyData: true
 RoxygenNote: 5.0.1

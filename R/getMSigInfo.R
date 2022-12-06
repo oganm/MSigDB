@@ -1,9 +1,10 @@
 #' Get information about the gene set
 #' @description Navigates to the relevant web page about the molecular signature
 #' @param Msig name of the molecular signature
+#' @param species Species that the signature belongs to
 #' @export
-getMSigInfo = function(Msig){
-    link = paste0("http://software.broadinstitute.org/gsea/msigdb/cards/",Msig,'.html')
+getMSigInfo = function(Msig,species){
+    link = paste0("https://www.gsea-msigdb.org/gsea/msigdb/",species,"/geneset/",Msig,".html")
     utils::browseURL(link)
 }
 

@@ -6,127 +6,101 @@ library(ogbox)
 library(git2r)
 
 url = "http://software.broadinstitute.org/gsea/downloads.jsp"
-session <-html_session(url)               ## create session
+session <-session(url)               ## create session
 form    <-html_form(session)[[1]]       ## pull form from session
 
 
-filled_form = set_values(form, j_username = "ogan.mancarcii@gmail.com")
+filled_form = html_form_set(form, username = "ogan.mancarcii@gmail.com")
 
-session = submit_form(session,filled_form)
+session = session_submit(session,filled_form)
 
-dataList = html_nodes(session,'.lists1')[[2]]
+dataList = html_nodes(session,'.lists1')
 
+session %>% 
+    html_node(xpath = '//*[@id="content_full"]/table[2]/tbody/tr[2]/td[2]/a')
 
-session %>%
-    html_node(xpath = '//*[@id="content_full"]/table[2]//*[contains(text(),"symbols.gmt")]') %>% 
-    html_text() %>% 
-    str_extract('(?<=v).*?(?=.symbols)') -> 
-    MSigVersion
-
-groupsToDownload= c('h.all.',
-                    'c1.all.',
-                    'c2.all.',
-                    'c3.all.',
-                    'c4.all.',
-                    'c5.all.',
-                    'c6.all.',
-                    'c7.all.')
+msigdb_links = c(human = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2022.1.Hs/msigdb_v2022.1.Hs_files_to_download_locally.zip",
+                 mouse = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2022.1.Mm/msigdb_v2022.1.Mm_files_to_download_locally.zip")
 
 
-if(MSigVersion!=readLines('data-raw/version')){
-    for(x in groupsToDownload){
-        datalinks = dataList %>% html_nodes(glue::glue('a[href*="{x}"]'))
-        datalinks %<>% sapply(html_attr,'href')
-        symbolLink = datalinks[grepl('symbols',datalinks)]
-        entrezLink = datalinks[grepl('entrez',datalinks)]
+human = jump_to(session,url = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2022.1.Hs/msigdb_v2022.1.Hs_files_to_download_locally.zip")
+human$response$content %>% writeBin('data-raw/human.zip')
+
+mouse = jump_to(session, url = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2022.1.Mm/msigdb_v2022.1.Mm_files_to_download_locally.zip")
+mouse$response$content %>% writeBin('data-raw/mouse.zip')
+
+
+lapply(c('human','mouse'), function(x){
+    unzip(glue::glue('data-raw/{x}.zip'),exdir = glue::glue('data-raw/{x}'))
+    files = list.files(glue::glue('data-raw/{x}'),recursive = TRUE,full.names = TRUE)
+    genes = files %>% grepl('xml',.) %>% {files[.]} %>% xml2::read_xml() %>% xml2::as_list()
+    
+    genes$MSIGDB
+})-> data
+names(data) = c('human','mouse')
+
+data %>% lapply(function(x){
+    categories = x %>% purrr::map_chr(function(y){
+        attributes(y)$CATEGORY_CODE
+    })
+    genes = x %>% purrr::map(function(y){
+        attributes(y)$MEMBERS_SYMBOLIZED %>% strsplit(',') %>% {.[[1]]}
+    })
+    name =  x %>% purrr::map_chr(function(y){
+        attributes(y)$STANDARD_NAME
+    })
+    
+    description = x %>% purrr::map_chr(function(y){
+        attributes(y)$DESCRIPTION_BRIEF
+    })
+    
+    categories %>% unique() %>% lapply(function(nm){
+        out = genes[categories %in% nm]
+        names(out) = name[categories %in% nm]
         
-        symbols = rvest::jump_to(session,url = glue::glue('http://software.broadinstitute.org/gsea/{symbolLink}'))
-        entrez = rvest::jump_to(session,url = glue::glue('http://software.broadinstitute.org/gsea/{entrezLink}'))
-        
-        writeLines(symbols$response %>% as.character,paste0('data-raw/',x,'symbols.gmt'))
-        writeLines(entrez$response %>% as.character,paste0('data-raw/',x,'entrez.gmt'))
-    }
+        for(i in seq_along(out)){
+            attributes(out[[i]]) = list(description = description[categories %in% nm][i])
+        }
+        return(out)
+    }) -> out
     
-    
-    
-    HALLMARK = 'data-raw/h.all.symbols.gmt'
-    C1_POSITIONAL = 'data-raw/c1.all.symbols.gmt'
-    C2_CURATED = 'data-raw/c2.all.symbols.gmt'
-    C3_MOTIF = 'data-raw/c3.all.symbols.gmt'
-    C4_COMPUTATIONAL = 'data-raw/c4.all.symbols.gmt'
-    C5_GENE_ONTOLOGY = 'data-raw/c5.all.symbols.gmt'
-    C6_ONCOGENIC_SIGNATURES = 'data-raw/c6.all.symbols.gmt'
-    C7_IMMUNOLOGIC_SIGNATURES = 'data-raw/c7.all.symbols.gmt'
-    
-    HALLMARK_entrez = 'data-raw/h.all.entrez.gmt'
-    C1_POSITIONAL_entrez = 'data-raw/c1.all.entrez.gmt'
-    C2_CURATED_entrez = 'data-raw/c2.all.entrez.gmt'
-    C3_MOTIF_entrez = 'data-raw/c3.all.entrez.gmt'
-    C4_COMPUTATIONAL_entrez = 'data-raw/c4.all.entrez.gmt'
-    C5_GENE_ONTOLOGY_entrez = 'data-raw/c5.all.entrez.gmt'
-    C6_ONCOGENIC_SIGNATURES_entrez = 'data-raw/c6.all.entrez.gmt'
-    C7_IMMUNOLOGIC_SIGNATURES_entrez = 'data-raw/c7.all.entrez.gmt'
-    
-    MSigDB = list(HALLMARK = HALLMARK,
-                  C1_POSITIONAL = C1_POSITIONAL,
-                  C2_CURATED = C2_CURATED,
-                  C3_MOTIF = C3_MOTIF,
-                  C4_COMPUTATIONAL = C4_COMPUTATIONAL,
-                  C5_GENE_ONTOLOGY = C5_GENE_ONTOLOGY,
-                  C6_ONCOGENIC_SIGNATURES = C6_ONCOGENIC_SIGNATURES,
-                  C7_IMMUNOLOGIC_SIGNATURES = C7_IMMUNOLOGIC_SIGNATURES)
-    
-    MSigDB_entrez = list(HALLMARK = HALLMARK_entrez,
-                         C1_POSITIONAL = C1_POSITIONAL_entrez,
-                         C2_CURATED = C2_CURATED_entrez,
-                         C3_MOTIF = C3_MOTIF_entrez,
-                         C4_COMPUTATIONAL = C4_COMPUTATIONAL_entrez,
-                         C5_GENE_ONTOLOGY = C5_GENE_ONTOLOGY_entrez,
-                         C6_ONCOGENIC_SIGNATURES = C6_ONCOGENIC_SIGNATURES_entrez,
-                         C7_IMMUNOLOGIC_SIGNATURES = C7_IMMUNOLOGIC_SIGNATURES_entrez)
-    
-    MSigDB %<>% 
-        map(readLines) %>% 
-        map(map,function(x){strsplit(x,'\t')[[1]]}) %>% 
-        map(function(x){
-            x = x[x %>% sapply(length) %>% {.!=0}]
-            names(x) = map(x,1)
-            x = map(x, function(y)y[-c(1,2)])
-            return(x)})
-    
-    MSigDB_entrez %<>%  
-        map(readLines) %>% 
-        map(map,function(x){strsplit(x,'\t')[[1]]}) %>% 
-        map(function(x){
-            x = x[x %>% sapply(length) %>% {.!=0}]
-            names(x) = map(x,1)
-            x = map(x, function(y)y[-c(1,2)])
-            return(x)})
-    
-    usethis::use_data(MSigDB,overwrite = TRUE)
-    usethis::use_data(MSigDB_entrez,overwrite = TRUE)
-    
-    version = getVersion()
-    version %<>% strsplit('\\.') %>% {.[[1]]}
-    setVersion(paste(version[1],version[2],MSigVersion,sep='.'))
-    
+    names(out) = categories %>% unique()
+    return(out)
+}) -> MSigDB
 
-    writeLines(MSigVersion,con = 'data-raw/version')
+
+
+data %>% lapply(function(x){
+    categories = x %>% purrr::map_chr(function(y){
+        attributes(y)$CATEGORY_CODE
+    })
+    entrez = x %>% purrr::map(function(y){
+        attributes(y)$MEMBERS_EZID %>% strsplit(',') %>% {.[[1]]}
+    })
+    name =  x %>% purrr::map_chr(function(y){
+        attributes(y)$STANDARD_NAME
+    })
     
-    repo = repository('.')
-    git2r::add(repo,path ='DESCRIPTION')
-    git2r::add(repo,path = 'data/MSigDB.rda')
-    git2r::add(repo,path = 'data/MSigDB_entrez.rda')
+    description = x %>% purrr::map_chr(function(y){
+        attributes(y)$DESCRIPTION_BRIEF
+    })
     
-    git2r::add(repo,path = 'data-raw/*')
-    git2r::commit(repo,message = paste('Automatic update to version',MSigVersion))
+    categories %>% unique() %>% lapply(function(nm){
+        out = entrez[categories %in% nm]
+        names(out) = name[categories %in% nm]
+        
+        for(i in seq_along(out)){
+            attributes(out[[i]]) = list(description = description[categories %in% nm][i])
+        }
+        return(out)
+    }) -> out
     
-    token = readLines('data-raw/auth')
-    Sys.setenv(GITHUB_PAT = token)
     
-    cred = git2r::cred_user_pass('OganM',pass)
-    git2r::push(repo,credentials = cred)
-} else{
-    print('Update not required')
-}
+    names(out) = categories %>% unique()
+    
+    return(out)
+}) -> MSigDB_entrez
+
+usethis::use_data(MSigDB,overwrite = TRUE)
+usethis::use_data(MSigDB_entrez,overwrite = TRUE)
 
