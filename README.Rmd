@@ -32,6 +32,6 @@ MSigDB$human$H$HALLMARK_PEROXISOME
 `getMSigInfo` function simply navigates to the broad institute website with the relevant data
 
 ```r
-getMSigInfo('HALLMARK_PEROXISOME',)
+getMSigInfo('HALLMARK_PEROXISOME','human')
 ```
 
