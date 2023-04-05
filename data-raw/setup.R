@@ -16,17 +16,17 @@ session = session_submit(session,filled_form)
 
 dataList = html_nodes(session,'.lists1')
 
-session %>% 
-    html_node(xpath = '//*[@id="content_full"]/table[2]/tbody/tr[2]/td[2]/a')
+# session %>% 
+#     html_node(xpath = '//*[@id="content_full"]/table[2]/tbody/tr[2]/td[2]/a')
 
-msigdb_links = c(human = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2022.1.Hs/msigdb_v2022.1.Hs_files_to_download_locally.zip",
-                 mouse = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2022.1.Mm/msigdb_v2022.1.Mm_files_to_download_locally.zip")
+msigdb_links = c(human = "http://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2023.1.Hs/msigdb_v2023.1.Hs.xml.zip",
+                 mouse = "http://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2023.1.Mm/msigdb_v2023.1.Mm.xml.zip")
 
 
-human = jump_to(session,url = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2022.1.Hs/msigdb_v2022.1.Hs_files_to_download_locally.zip")
+human = jump_to(session,url = msigdb_links['human'])
 human$response$content %>% writeBin('data-raw/human.zip')
 
-mouse = jump_to(session, url = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2022.1.Mm/msigdb_v2022.1.Mm_files_to_download_locally.zip")
+mouse = jump_to(session, url = msigdb_links['mouse'])
 mouse$response$content %>% writeBin('data-raw/mouse.zip')
 
 
